@@ -2,6 +2,7 @@ from kafka.admin import KafkaAdminClient, NewTopic
 
 server = "kafka:9092"
 
+
 def instantiate_client(server: str, client_id: str) -> KafkaAdminClient:
     """
     Instantiate a client for administering a Kafka cluster
@@ -13,6 +14,7 @@ def instantiate_client(server: str, client_id: str) -> KafkaAdminClient:
     Returns:
         KafkaAdminClient: The kafka client
     """
+    
     try:
         admin_client = KafkaAdminClient(
             bootstrap_servers=server, 
@@ -36,6 +38,7 @@ def create_topic(admin_client: KafkaAdminClient, topic_name: str, partitions: in
         partitions (int): The number of partitions
         replicas (int): The number of replicas
     """
+    
     try:
         topic = NewTopic(name=topic_name, num_partitions=partitions, replication_factor=replicas)
         admin_client.create_topics(new_topics=[topic], validate_only=False)
