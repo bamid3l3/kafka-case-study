@@ -21,6 +21,7 @@ def create_consumer(server: str, topic: str) -> KafkaConsumer:
     Returns:
         KafkaConsumer: The Kafka consumer object
     """
+    
     try:
         consumer = KafkaConsumer(
             topic,
