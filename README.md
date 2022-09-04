@@ -1,5 +1,4 @@
 # **Kafka Case Study**
-<br/>
 
 
 ## **Overview**  
@@ -9,12 +8,10 @@
 This repo provides a POC solution that involves setting up a local kafka cluster with a single broker for development. Two topics (`input_topic` and `output_topic`) are created by a simple client application (`topics.py`) and `input_topic` is populated with the malformed data in the `messages.json` file by a producer application (`producer.py`). A transformer application (`transformer.py`) consumes the malformed messages from `input_topic`, transforms/corrects the messages and sends them to `output_topic`. The transformation involves converting the timezone of the timestamp value in each message from Europe/Berlin to UTC.
 
 <br/>
-<br/>
 
 ## **Prerequisites**
 To reproduce this application in your environment, the installation of **Docker** and **docker-compose** is required. For steps on how to install Docker, visit this [link](https://docs.docker.com/engine/install/).
 
-<br/>
 <br/>
 
 
@@ -26,7 +23,7 @@ The step-by-step instructions on how to reproduce this solution are given below:
 - Spin up the infrastructure including the broker, zookeeper, and the python applications with the command below (Ensure that the ports **29092** and **22181** are open on your machine):
                             
     ```sh
-    docker-compose up -d
+    docker compose up -d
     ```
 
 
