@@ -17,7 +17,7 @@ To reproduce this application in your environment, the installation of **Docker*
 
 ## **Usage**
 The step-by-step instructions on how to reproduce this solution are given below:
-- `cd` into the root of the project and ensure that your working directory has the `docker-compose.yml` in it.
+- Clone the repository and `cd` into the root of the project. Ensure that your working directory has the `docker-compose.yml` in it.
 
 
 - Spin up the infrastructure including the broker, zookeeper, and the python applications with the command below (Ensure that the ports **29092** and **22181** are open on your machine):
