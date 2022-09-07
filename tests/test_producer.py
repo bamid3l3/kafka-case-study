@@ -43,25 +43,25 @@ class TestProducer(object):
         subprocess.run(command, shell=True)
 
 
-    # def test_create_producer(self):
-    #     producer = create_producer(SERVER)
-    #     assert producer is not None
-    #     assert isinstance(producer, KafkaProducer)
+    def test_create_producer(self):
+        producer = create_producer(SERVER)
+        assert producer is not None
+        assert isinstance(producer, KafkaProducer)
     
 
-    # def test_create_producer_exception(self):
-    #     with pytest.raises(NoBrokersAvailable):
-    #         producer = create_producer("localhost:9999")
+    def test_create_producer_exception(self):
+        with pytest.raises(NoBrokersAvailable):
+            producer = create_producer("localhost:9999")
         
     
-    # def test_read_messages(self):
-    #     messages = read_messages(self.path)
+    def test_read_messages(self):
+        messages = read_messages(self.path)
 
-    #     assert isinstance(messages, Iterator)
-    #     assert next(messages, None) is not None
-    #     assert type(next(messages, None)) == dict
-    #     assert type(next(messages, None)) == dict
-    #     assert next(messages, None) is None
+        assert isinstance(messages, Iterator)
+        assert next(messages, None) is not None
+        assert type(next(messages, None)) == dict
+        assert type(next(messages, None)) == dict
+        assert next(messages, None) is None
 
 
     def test_send_messages(self):
