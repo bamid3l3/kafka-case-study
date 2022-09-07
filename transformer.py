@@ -2,21 +2,28 @@ import json
 import datetime
 from datetime import datetime
 import pytz
-from kafka import KafkaProducer, KafkaConsumer, TopicPartition
+import os
+from kafka import KafkaConsumer
+from kafka.errors import NoBrokersAvailable
 from producer import create_producer, send_messages
+from typing import Iterator
 
-old_topic = "input_topic" 
-new_topic = "output_topic"
+
+old_topic = os.getenv("INPUT_TOPIC", "input_topic")
+new_topic = os.getenv("OUTPUT_TOPIC", "output_topic")
 server = "kafka:9092"
+group_id = os.getenv("CONSUMER_GROUP", "test_group")
+timeout = int(os.getenv("CONSUMER_TIMEOUT", 3))
 
 
-def create_consumer(server: str, topic: str) -> KafkaConsumer:
+def create_consumer(server: str, topic: str, group_id: str, timeout: int) -> KafkaConsumer:
     """
     Create a Kafka consumer
 
     Args:
         server (str): The host[:port] string of the broker
         topic (str): The topic to which the consumer will be subscribed
+        timout (int): Number of seconds before the consumer times out
 
     Returns:
         KafkaConsumer: The Kafka consumer object
@@ -27,7 +34,14 @@ def create_consumer(server: str, topic: str) -> KafkaConsumer:
             topic,
             bootstrap_servers=[server],
             auto_offset_reset="earliest",
+            group_id=group_id,
+            enable_auto_commit=True,
+            consumer_timeout_ms=timeout*1000,
             value_deserializer=lambda x: json.loads(x.decode("utf-8")))
+    except NoBrokersAvailable as e:
+        message = f"Failed to connect to broker. {e}"
+        raise NoBrokersAvailable(message)
+
     except Exception as e:
         message = f"Failed to create consumer. {e}"
         raise Exception(message)
@@ -37,7 +51,7 @@ def create_consumer(server: str, topic: str) -> KafkaConsumer:
     return consumer
 
 
-def consume_messages(consumer: KafkaConsumer, topic: str) -> list:
+def consume_messages(consumer: KafkaConsumer, topic: str) -> Iterator[dict]:
     """
     Consume all the messages from the provided topic into a list
 
@@ -46,81 +60,75 @@ def consume_messages(consumer: KafkaConsumer, topic: str) -> list:
         topic (str): The topic to consume messages from
 
     Returns:
-        list: A list of the consumed messages
+        Generator[dict]: A generator object of the consumed messages
     """
-
-    topic_partition = TopicPartition(topic, 0)
-    last_offset = consumer.end_offsets([topic_partition])[topic_partition]
-
-    messages = []
     
     try:
+        count = 0
         for message in consumer:
-            message_offset = message.offset
             message = message.value
-            messages.append(message)
-            if message_offset == last_offset - 1:
-                break
+            yield message
+            count += 1
     except Exception as e:
         message = f"Failed to consume messages. {e}"
         raise Exception(message)
 
-    print(f"Successfully consumed {len(messages)} from {topic}!")
-
-    return messages
+    print(f"Successfully consumed {count} from {topic}!")
 
 
-def change_timezone(timestamp_string: str, old_timezone: str="Europe/Berlin", new_timezone: str="UTC") -> str:
+def change_timezone(timestamp_string: str, new_timezone: str="UTC") -> str:
     """
     Change the timezone of a given timestamp string from the old timezone to the new timezone
 
     Args:
         timestamp_string (str):The timestamp string to change
-        old_timezone (str, optional): The old timezone. Defaults to "Europe/Berlin".
         new_timezone (str, optional): The new timezone. Defaults to "UTC".
 
     Returns:
         str: The corrected timestamp string
     """
 
-    old_timezone_object = pytz.timezone(old_timezone)
     new_timezone_object = pytz.timezone(new_timezone)
 
-    old_timestamp = datetime.fromisoformat(timestamp_string).replace(tzinfo=None)
-    localized_timestamp = old_timezone_object.localize(old_timestamp)
-    new_timestamp = localized_timestamp.astimezone(new_timezone_object)
+    old_timestamp = datetime.fromisoformat(timestamp_string)
+    new_timestamp = old_timestamp.astimezone(new_timezone_object)
     new_timestamp_string = new_timestamp.isoformat()
 
     return new_timestamp_string
 
 
-def transform_messages(messages: list) -> list:
+def transform_messages(messages: Iterator[dict]) -> Iterator[dict]:
     """
     Convert the timestamp in each message from Europe/Berlin to UTC
 
     Args:
-        messages (list): The list of messages to correct
+        messages (Iterator[dict]): A generator of the messages to correct
 
     Returns:
-        list: The list of corrected messages
+        list: A generator of the corrected messages
     """
     
+    count = 0
     for message in messages:
         if message["myTimestamp"] == "":
+            yield message
+            count += 1
             continue
         try:
             message["myTimestamp"] = change_timezone(message["myTimestamp"])
+            yield message
+            count += 1
         except Exception as e:
             error_message = f"Failed to process timestamp. {e}"
             raise Exception(error_message)
     
-    print("Successfully transformed messages!")
+    print(f"Successfully transformed {count} messages!")
 
     return messages
 
 
 def main():
-    consumer = create_consumer(server, old_topic)
+    consumer = create_consumer(server, old_topic, group_id, timeout)
     messages = consume_messages(consumer, old_topic)
     transformed_messages = transform_messages(messages)
     producer = create_producer(server)
